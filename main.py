@@ -24,8 +24,56 @@ IMAGES_DIR.mkdir(parents=True, exist_ok=True)
 # 内存中暂存已上传的图片 {image_key: bytes}
 _image_store: dict[str, bytes] = {}
 
-# 企业微信文本+图片合并：暂存最近一条文本，等图片到了一起发
-_wecom_pending: dict = {"text": None, "ts": 0}
+# 企业微信文本+图片合并：暂存最近一条文本，等图片到来或超时后再发
+_wecom_pending: dict = {"text": None, "ts": 0, "sent": False}
+# 文本缓存等待窗口（秒）
+WECOM_TEXT_DELAY_SECONDS = 5
+# 小型轮询线程，负责把超时未配对的文本发出去
+_wecom_flush_running = False
+
+def enqueue_wecom_text(text: str):
+    """缓存企业微信文本，等待图片或者超时发送。"""
+    _wecom_pending["text"] = text
+    _wecom_pending["ts"] = time.time()
+    _wecom_pending["sent"] = False
+    ensure_wecom_flush_loop()
+
+
+def flush_wecom_pending_if_needed():
+    """把超过等待窗口但没等到图片的企业微信文本发出去。"""
+    pending = _wecom_pending
+    if pending.get("text") and not pending.get("sent"):
+        if time.time() - pending.get("ts", 0) >= WECOM_TEXT_DELAY_SECONDS:
+            text = pending["text"]
+            pending["text"] = None
+            pending["ts"] = 0
+            pending["sent"] = True
+            return text
+    return None
+
+
+def ensure_wecom_flush_loop():
+    """启动一个很轻量的后台循环，定期检查是否该把缓存文本发出。"""
+    global _wecom_flush_running
+    if _wecom_flush_running:
+        return
+    _wecom_flush_running = True
+
+    import threading
+
+    def _loop():
+        while True:
+            try:
+                text = flush_wecom_pending_if_needed()
+                if text:
+                    import asyncio
+                    asyncio.run(send_to_bark(title="企业微信通知", body=text))
+            except Exception as e:
+                print(f"[企微flush异常] {e}")
+            time.sleep(1)
+
+    t = threading.Thread(target=_loop, daemon=True)
+    t.start()
 
 app = FastAPI(title="WeCom to Bark Proxy")
 
@@ -78,9 +126,8 @@ def extract_wecom_content(body: dict) -> tuple[str, str | None]:
 async def wecom_webhook(request: Request):
     body = await request.json()
     text, _ = extract_wecom_content(body)
-    print(f"[企业微信消息] {text[:100]}")
-    result = await send_to_bark(title="企业微信通知", body=text)
-    print(f"[Bark 响应] {result}")
+    print(f"[企业微信文本] 缓存等待图片: {text[:100]}")
+    enqueue_wecom_text(text)
     return {"errcode": 0, "errmsg": "ok"}
 
 
@@ -120,10 +167,11 @@ async def catch_all(path: str, request: Request):
                 image_key = save_base64_image(b64_data)
 
                 pending = _wecom_pending
-                if pending["text"] and (time.time() - pending["ts"] < 5):
+                if pending.get("text"):
                     text = pending["text"]
                     pending["text"] = None
                     pending["ts"] = 0
+                    pending["sent"] = True
                     print(f"[企微合并] 文本+图片 -> {text[:50]}")
                     result = await send_to_bark(title="企业微信通知", body=text, image_key=image_key)
                 else:
@@ -133,18 +181,15 @@ async def catch_all(path: str, request: Request):
                 print(f"[Bark 响应] {result}")
                 return {"code": 0, "msg": "forwarded to bark"}
 
-            # 企业微信文本先暂存，再转发
+            # 企业微信文本（有些发送端会直接 POST 到根路径 /）也统一走缓存，不立即发
             if "msgtype" in body and body["msgtype"] == "text":
                 text = body.get("text", {}).get("content", "")
                 if text:
-                    _wecom_pending["text"] = text
-                    _wecom_pending["ts"] = time.time()
-                    print(f"[企微文本] 暂存并转发: {text[:80]}")
-                    result = await send_to_bark(title="企业微信通知", body=text)
-                    print(f"[Bark 响应] {result}")
-                    return {"code": 0, "msg": "forwarded to bark"}
+                    print(f"[兜底企微文本] 已缓存等待图片: {text[:80]}")
+                    enqueue_wecom_text(text)
+                    return {"code": 0, "msg": "buffered"}
 
-            # 其他兜底文本
+            # 其他兜底文本（非企业微信）
             text = None
             for key in ("text", "content", "body", "message", "msg", "description"):
                 if key in body:
