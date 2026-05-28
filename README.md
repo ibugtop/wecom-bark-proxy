@@ -51,15 +51,15 @@ docker logs -f notify-proxy
 本服务使用 Docker 共享网络 `web_proxy`，因此：
 
 - `notify-proxy` 可以直接访问 `bark-server:8080`
-- NPM 可以把 `https://notify.ibug.top` 反代到 `notify-proxy:55304`
+- NPM 可以把 `https://notify.example.com` 反代到 `notify-proxy:55304`
 
 ## 环境变量
 
 | 变量 | 默认值 | 说明 |
 |---|---|---|
-| `BARK_URL` | `https://bark.ibug.top/xgRnZEPJfcW6Tpg6pLZDjU` | Bark 推送地址 |
+| `BARK_URL` | `https://bark.example.com/<BARK_DEVICE_KEY>` | Bark 推送地址 |
 | `LISTEN_PORT` | `55304` | 监听端口 |
-| `SERVER_BASE_URL` | `https://notify.ibug.top` | 图片对外访问地址 |
+| `SERVER_BASE_URL` | `https://notify.example.com` | 图片对外访问地址 |
 | `IMAGES_DIR` | `/data/images` | 图片持久化目录 |
 
 ## 企业微信配置建议
@@ -67,7 +67,7 @@ docker logs -f notify-proxy
 企业微信里把 Webhook 填成：
 
 ```text
-https://notify.ibug.top/cgi-bin/webhook/send
+https://notify.example.com/cgi-bin/webhook/send
 ```
 
 如果你的上游会自动拼签名参数，确保基础地址后面已经有路径和 `?`，避免变成非法 URL。

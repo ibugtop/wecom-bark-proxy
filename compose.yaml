@@ -6,7 +6,7 @@ services:
     environment:
       BARK_URL: "http://bark-server:8080/xgRnZEPJfcW6Tpg6pLZDjU"
       LISTEN_PORT: "55304"
-      SERVER_BASE_URL: "https://notify.ibug.top"
+      SERVER_BASE_URL: "https://notify.example.com"
       TZ: Asia/Shanghai
     volumes:
       - ./data/images:/data/images
