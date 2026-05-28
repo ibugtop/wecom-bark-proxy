@@ -58,17 +58,21 @@ docker logs -f notify-proxy
 | `SERVER_BASE_URL` | `http://<YOUR_SERVER_IP>:55304` | 需要替换为你自己的服务器公网 IP 或域名 |
 | `IMAGES_DIR` | `/data/images` | 图片持久化目录 |
 
-## 企业微信配置建议
+## 发送端配置建议
 
-企业微信里把 Webhook 填成：
+发送端选择企业微信
+
+Webhook 地址填成：
 
 ```text
 http://<YOUR_SERVER_IP>:55304/cgi-bin/webhook/send
 ```
+或
+```text
+http://<YOUR_SERVER_IP>:55304
+```
 
-如果你的上游会自动拼签名参数，确保基础地址后面已经有路径和 `?`，避免变成非法 URL。
-
-如果你打算自己通过域名访问，也可以替换成自己的域名，例如：
+如果你打算自己通过域名访问，也可以配合npm等反代，通过域名访问，例如：
 
 ```text
 https://notify.example.com
@@ -86,7 +90,3 @@ https://notify.example.com
 4. Bark 再把图片展示给手机
 
 这样就能同时支持文本和图片。
-
-## 备注
-
-飞书、钉钉、Telegram 的中转逻辑已移除，只保留企业微信，代码更干净。
