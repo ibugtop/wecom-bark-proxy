@@ -1,0 +1,18 @@
+services:
+  notify-proxy:
+    build: .
+    container_name: notify-proxy
+    restart: always
+    environment:
+      BARK_URL: "http://bark-server:8080/xgRnZEPJfcW6Tpg6pLZDjU"
+      LISTEN_PORT: "55304"
+      SERVER_BASE_URL: "https://notify.ibug.top"
+      TZ: Asia/Shanghai
+    volumes:
+      - ./data/images:/data/images
+    networks:
+      - web_proxy
+
+networks:
+  web_proxy:
+    external: true
