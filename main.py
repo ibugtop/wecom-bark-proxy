@@ -17,7 +17,7 @@ from fastapi.responses import FileResponse, JSONResponse
 # ============ 配置 ============
 BARK_URL = os.environ.get("BARK_URL", "https://bark.example.com/<BARK_DEVICE_KEY>")
 LISTEN_PORT = int(os.environ.get("LISTEN_PORT", "55304"))
-SERVER_BASE_URL = os.environ.get("SERVER_BASE_URL", "https://notify.ibug.top")
+SERVER_BASE_URL = os.environ.get("SERVER_BASE_URL", "http://<YOUR_SERVER_IP>:55304")
 IMAGES_DIR = Path(os.environ.get("IMAGES_DIR", "/data/images"))
 IMAGES_DIR.mkdir(parents=True, exist_ok=True)
 

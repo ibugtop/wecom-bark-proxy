@@ -3,16 +3,15 @@ services:
     build: .
     container_name: notify-proxy
     restart: always
+    ports:
+      - "55304:55304"
     environment:
-      BARK_URL: "http://bark-server:8080/xgRnZEPJfcW6Tpg6pLZDjU"
+      # 需要替换为你自己的 Bark 服务地址和设备 key
+      BARK_URL: "http://<BARK_SERVER_IP>:8080/<BARK_DEVICE_KEY>"
+      # 容器监听端口，默认 55304
       LISTEN_PORT: "55304"
-      SERVER_BASE_URL: "https://notify.example.com"
+      # 需要替换为你自己的服务器公网 IP 或域名（用于图片 URL）
+      SERVER_BASE_URL: "http://<YOUR_SERVER_IP>:55304"
       TZ: Asia/Shanghai
     volumes:
       - ./data/images:/data/images
-    networks:
-      - web_proxy
-
-networks:
-  web_proxy:
-    external: true

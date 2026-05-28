@@ -48,18 +48,14 @@ docker logs -f notify-proxy
 
 ## 依赖网络
 
-本服务使用 Docker 共享网络 `web_proxy`，因此：
-
-- `notify-proxy` 可以直接访问 `bark-server:8080`
-- NPM 可以把 `https://notify.example.com` 反代到 `notify-proxy:55304`
-
+本服务默认采用 **IP + 端口** 的最简单方式，不依赖额外 Docker 网络。你只需要把容器端口映射到宿主机即可。
 ## 环境变量
 
 | 变量 | 默认值 | 说明 |
 |---|---|---|
-| `BARK_URL` | `https://bark.example.com/<BARK_DEVICE_KEY>` | Bark 推送地址 |
-| `LISTEN_PORT` | `55304` | 监听端口 |
-| `SERVER_BASE_URL` | `https://notify.example.com` | 图片对外访问地址 |
+| `BARK_URL` | `http://<BARK_SERVER_IP>:8080/<BARK_DEVICE_KEY>` | 需要替换为你自己的 Bark 服务地址和设备 key |
+| `LISTEN_PORT` | `55304` | 监听端口，通常不用改 |
+| `SERVER_BASE_URL` | `http://<YOUR_SERVER_IP>:55304` | 需要替换为你自己的服务器公网 IP 或域名 |
 | `IMAGES_DIR` | `/data/images` | 图片持久化目录 |
 
 ## 企业微信配置建议
@@ -67,10 +63,18 @@ docker logs -f notify-proxy
 企业微信里把 Webhook 填成：
 
 ```text
-https://notify.example.com/cgi-bin/webhook/send
+http://<YOUR_SERVER_IP>:55304/cgi-bin/webhook/send
 ```
 
 如果你的上游会自动拼签名参数，确保基础地址后面已经有路径和 `?`，避免变成非法 URL。
+
+如果你打算自己通过域名访问，也可以替换成自己的域名，例如：
+
+```text
+https://notify.example.com
+```
+
+具体填什么，取决于你自己的接入程序要求。对于这份公开版，**默认示例是 IP + 端口**。
 
 ## 说明
 
